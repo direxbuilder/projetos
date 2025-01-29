@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerenciador de Projetos</title>
+    <style>
+        /* Reset CSS básico */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        /* Container principal ocupando toda a tela */
+        .container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Frame responsivo com posicionamento absoluto */
+        .responsive-iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        /* Media queries para diferentes tamanhos de tela */
+        @media screen and (max-width: 768px) {
+            .container {
+                padding-bottom: 75%; /* Proporção 4:3 para telas menores */
+            }
+        }
+
+        @media screen and (max-width: 480px) {
+            .container {
+                padding-bottom: 100%; /* Proporção 1:1 para dispositivos móveis */
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Container para o iframe -->
+    <div class="container">
+        <!-- 
+            Substitua YOUR_WEBAPP_URL pela URL do seu Web App
+            Format: https://script.google.com/macros/s/.../exec 
+        -->
+        <iframe 
+            class="responsive-iframe"
+            src="https://script.google.com/macros/s/AKfycbw5RQZQh46lv40r6FAxipdF409gk0yZ-alZeZKLjUiVkwBRxwO5RDQ2vrGnTX4F8BXswA/exec"
+            frameborder="0"
+            allowfullscreen="true"
+            sandbox="allow-same-origin allow-scripts allow-forms allow-popups"
+        ></iframe>
+    </div>
+
+    <!-- Script opcional para ajuste de altura dinâmica -->
+    <script>
+        window.addEventListener('message', function(e) {
+            // Verifica se a mensagem veio do seu Web App
+            if (e.origin === 'https://script.google.com') {
+                const iframe = document.querySelector('.responsive-iframe');
+                // Ajusta altura baseado na mensagem recebida
+                if (e.data && e.data.height) {
+                    iframe.style.height = e.data.height + 'px';
+                }
+            }
+        });
+    </script>
+</body>
+</html>

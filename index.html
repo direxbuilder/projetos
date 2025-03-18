@@ -39,31 +39,6 @@
             background-color: white;
         }
 
-        /* Status de conexão */
-        .connection-status {
-            position: fixed;
-            top: 10px;
-            right: 10px;
-            padding: 8px 15px;
-            border-radius: 4px;
-            font-size: 14px;
-            font-weight: bold;
-            z-index: 1000;
-            display: none;
-            transition: all 0.3s ease;
-        }
-
-        .online {
-            background-color: #4CAF50;
-            color: white;
-        }
-
-        .offline {
-            background-color: #f44336;
-            color: white;
-            display: block;
-        }
-
         /* Loading spinner */
         .loading-overlay {
             position: absolute;
@@ -92,45 +67,6 @@
             100% { transform: rotate(360deg); }
         }
 
-        /* Mensagem de erro aprimorada */
-        .error-message {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background-color: white;
-            padding: 20px;
-            border-radius: 5px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-            max-width: 80%;
-            text-align: center;
-            display: none;
-            z-index: 1001;
-        }
-
-        .error-message h3 {
-            color: #f44336;
-            margin-bottom: 10px;
-        }
-
-        .error-message p {
-            margin-bottom: 15px;
-        }
-
-        .error-message button {
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-weight: bold;
-        }
-
-        .error-message button:hover {
-            background-color: #45a049;
-        }
-
         /* Media queries aprimoradas */
         @media screen and (max-width: 992px) {
             .container {
@@ -153,39 +89,22 @@
             .responsive-iframe {
                 height: 80vh;
             }
-            
-            .error-message {
-                max-width: 95%;
-                padding: 15px;
-            }
         }
     </style>
 </head>
 <body>
     <!-- Container principal -->
     <div class="container">
-        <!-- Status de conexão -->
-        <div id="connectionStatus" class="connection-status">
-            Sem conexão com a internet
-        </div>
-        
         <!-- Loading overlay -->
         <div id="loadingOverlay" class="loading-overlay">
             <div class="spinner"></div>
-        </div>
-        
-        <!-- Mensagem de erro -->
-        <div id="errorMessage" class="error-message">
-            <h3>Problema de Conexão</h3>
-            <p>Não foi possível conectar ao serviço do Google Apps Script. Verifique sua conexão com a internet e tente novamente.</p>
-            <button onclick="reloadApp()">Tentar novamente</button>
         </div>
         
         <!-- iframe para o Web App do GAS -->
         <iframe 
             id="appFrame"
             class="responsive-iframe"
-            src="https://script.google.com/macros/s/AKfycbx8HeqgdC5w7bvXqzfDzABYcVegycDfpGLSHUbk8trSGuUdfWMVRv-3gA3uYzs3jTQmzQ/exec"
+            src="https://script.google.com/macros/s/AKfycbziM-5TbVf-f0pD4IXOi5iENSBtKFL8vV_rWvyV-DdLLm8JjCL2VPMgn4I72sigV4_vQQ/exec"
             frameborder="0"
             allowfullscreen="true"
             sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox"
@@ -196,150 +115,16 @@
         // Elementos do DOM
         const appFrame = document.getElementById('appFrame');
         const loadingOverlay = document.getElementById('loadingOverlay');
-        const errorMessage = document.getElementById('errorMessage');
-        const connectionStatus = document.getElementById('connectionStatus');
         
-        // URL do Web App do Google Apps Script
-        const gasAppUrl = 'https://script.google.com/macros/s/AKfycbx8HeqgdC5w7bvXqzfDzABYcVegycDfpGLSHUbk8trSGuUdfWMVRv-3gA3uYzs3jTQmzQ/exec';
-        
-        // Token de tempo para verificar cache (evita problemas com cache)
-        const timeToken = new Date().getTime();
-        
-        /**
-         * Verifica conexão com a internet e o servidor GAS
-         */
-        function checkConnection() {
-            return new Promise((resolve, reject) => {
-                // Primeiro verifica se o navegador está online
-                if (!navigator.onLine) {
-                    showOfflineStatus();
-                    reject(new Error('Navegador offline'));
-                    return;
-                }
-                
-                // Verifica se o servidor GAS está acessível
-                fetch(gasAppUrl + '?checkConnection=true&t=' + timeToken, {
-                    method: 'HEAD',
-                    mode: 'no-cors', // Importante para evitar problemas de CORS
-                    cache: 'no-store'
-                })
-                .then(response => {
-                    hideOfflineStatus();
-                    resolve(true);
-                })
-                .catch(error => {
-                    showOfflineStatus();
-                    reject(error);
-                });
-            });
-        }
-        
-        /**
-         * Mostra status de desconexão
-         */
-        function showOfflineStatus() {
-            connectionStatus.classList.add('offline');
-            setTimeout(() => {
-                if (navigator.onLine) {
-                    hideOfflineStatus();
-                }
-            }, 5000); // Tenta esconder após 5 segundos se a conexão voltar
-        }
-        
-        /**
-         * Esconde status de desconexão
-         */
-        function hideOfflineStatus() {
-            connectionStatus.classList.remove('offline');
-        }
-        
-        /**
-         * Inicializa o aplicativo
-         */
-        function initApp() {
-            loadingOverlay.style.display = 'flex';
-            errorMessage.style.display = 'none';
-            
-            checkConnection()
-                .then(() => {
-                    // Carrega o iframe com o Web App
-                    appFrame.src = gasAppUrl + '?t=' + timeToken;
-                    
-                    // Configura evento para quando o iframe carregar
-                    appFrame.onload = function() {
-                        loadingOverlay.style.display = 'none';
-                    };
-                    
-                    // Configura timeout para caso o iframe não carregue
-                    setTimeout(() => {
-                        if (loadingOverlay.style.display !== 'none') {
-                            showError();
-                        }
-                    }, 15000); // 15 segundos de timeout
-                })
-                .catch(error => {
-                    console.error('Erro ao verificar conexão:', error);
-                    showError();
-                });
-        }
-        
-        /**
-         * Mostra mensagem de erro
-         */
-        function showError() {
+        // Esconde o loading quando o iframe carregar
+        appFrame.onload = function() {
             loadingOverlay.style.display = 'none';
-            errorMessage.style.display = 'block';
-        }
+        };
         
-        /**
-         * Recarrega o aplicativo
-         */
-        function reloadApp() {
-            errorMessage.style.display = 'none';
-            initApp();
-        }
-        
-        // Monitora mudanças no status de conexão
-        window.addEventListener('online', () => {
-            hideOfflineStatus();
-            reloadApp();
-        });
-        
-        window.addEventListener('offline', () => {
-            showOfflineStatus();
-        });
-        
-        // Manipula mensagens do iframe para ajuste dinâmico
-        window.addEventListener('message', function(e) {
-            // Verifica se a mensagem veio do iframe do GAS
-            if (e.origin === 'https://script.google.com') {
-                try {
-                    // Processa mensagens para ajustes de altura, etc.
-                    if (e.data && e.data.height) {
-                        appFrame.style.height = e.data.height + 'px';
-                    }
-                    
-                    // Processa outras mensagens conforme necessário
-                    if (e.data && e.data.action === 'hideLoading') {
-                        loadingOverlay.style.display = 'none';
-                    }
-                } catch (error) {
-                    console.error('Erro ao processar mensagem:', error);
-                }
-            }
-        });
-        
-        // Inicia o aplicativo quando a página carregar
-        document.addEventListener('DOMContentLoaded', initApp);
-        
-        // Verifica a conexão periodicamente
-        setInterval(() => {
-            if (navigator.onLine) {
-                checkConnection().catch(error => {
-                    console.warn('Verificação periódica de conexão falhou:', error);
-                });
-            }
-        }, 30000); // Verifica a cada 30 segundos
+        // Esconde o loading após um tempo, mesmo se o onload não disparar
+        setTimeout(() => {
+            loadingOverlay.style.display = 'none';
+        }, 5000);
     </script>
 </body>
 </html>

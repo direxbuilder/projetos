@@ -5,8 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <title>Sistema de Gestão de Projetos (SGP)</title>
+    <!-- Cache-control para recursos estáticos -->
+    <meta http-equiv="Cache-Control" content="max-age=604800">
     <style>
-        /* Reset CSS básico */
+        /* Reset CSS básico com supressão explícita de scroll */
         * {
             margin: 0;
             padding: 0;
@@ -17,114 +19,543 @@
             width: 100%;
             height: 100%;
             font-family: Arial, sans-serif;
-            background-color: #f5f5f5;
+            background-color: #006666;
+            overflow: hidden !important; /* Garante que não haverá scroll em nenhuma condição */
+            position: fixed; /* Impede scroll em dispositivos móveis */
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
         }
 
-        /* Container principal com melhor fluidez */
+        /* Container principal - fixo sem possibilidade de scroll */
         .container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden !important;
             display: flex;
             flex-direction: column;
-            width: 100%;
-            height: 100vh;
-            overflow: hidden;
-            position: relative;
         }
 
-        /* Frame responsivo */
+        /* Frame responsivo sem scroll */
         .responsive-iframe {
             flex: 1;
             width: 100%;
             height: 100%;
             border: none;
-            background-color: white;
+            background-color: transparent;
+            opacity: 0;
+            transition: opacity 0.4s ease-in-out;
+            will-change: opacity;
+            overflow: hidden !important;
         }
 
-        /* Loading spinner */
+        /* Loading overlay */
         .loading-overlay {
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(255, 255, 255, 0.8);
             display: flex;
+            flex-direction: column;
             justify-content: center;
             align-items: center;
             z-index: 999;
+            transition: opacity 0.4s ease-in-out;
+            background-color: rgba(0, 0, 0, 0.25);
+            will-change: opacity;
+            overflow: hidden !important;
         }
 
-        .spinner {
-            width: 50px;
-            height: 50px;
-            border: 5px solid #f3f3f3;
-            border-top: 5px solid #3498db;
+        /* Barra de progresso */
+        .progress-container {
+            width: 300px;
+            background-color: rgba(255, 255, 255, 0.3);
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+            position: relative;
+        }
+
+        .progress-bar {
+            height: 10px;
+            background: linear-gradient(90deg, #3333ff, #006666);
+            width: 0%;
+            border-radius: 10px;
+            transition: width 0.5s cubic-bezier(0.1, 0.7, 1.0, 0.1);
+            position: relative;
+            will-change: width;
+        }
+
+        /* Efeito de pulso na barra de progresso */
+        .progress-bar::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+            animation: pulse 1.5s infinite;
+            will-change: transform;
+        }
+
+        @keyframes pulse {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        /* Mensagem de carregamento */
+        .loading-message {
+            color: white;
+            font-size: 20px;
+            font-weight: bold;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+            margin-top: 15px;
+            text-align: center;
+            min-height: 30px;
+            background-color: rgba(0, 0, 0, 0.4);
+            padding: 8px 15px;
+            border-radius: 8px;
+            transition: opacity 0.3s ease;
+        }
+
+        /* Fundo animado otimizado */
+        .animated-background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            z-index: -1;
+            background: linear-gradient(
+                45deg,
+                #3333ff,
+                #006666,
+                #000099,
+                #006666,
+                #3333ff
+            );
+            background-size: 400% 400%;
+            animation: gradient 15s ease infinite;
+            will-change: background-position;
+        }
+
+        @keyframes gradient {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* Formas Flutuantes Otimizadas */
+        .animated-shape {
+            position: absolute;
+            background: radial-gradient(circle, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0) 70%);
             border-radius: 50%;
-            animation: spin 1s linear infinite;
+            pointer-events: none;
+            animation: floating 4s infinite ease-in-out;
+            will-change: transform;
         }
 
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+        @keyframes floating {
+            0% { transform: translateY(0) translateX(0); }
+            50% { transform: translateY(-15px) translateX(8px); }
+            100% { transform: translateY(0) translateX(0); }
         }
 
-        /* Media queries aprimoradas */
+        /* Tamanhos e posições das formas */
+        .shape1 { width: 150px; height: 150px; top: 10%; left: 10%; animation-delay: 0s; }
+        .shape2 { width: 100px; height: 100px; top: 20%; left: 40%; animation-delay: -0.5s; }
+        .shape3 { width: 200px; height: 200px; top: 40%; left: 70%; animation-delay: -1s; }
+        .shape4 { width: 120px; height: 120px; top: 60%; left: 30%; animation-delay: -1.5s; }
+        .shape5 { width: 180px; height: 180px; top: 80%; left: 60%; animation-delay: -2s; }
+
+        /* Media queries otimizadas */
         @media screen and (max-width: 992px) {
-            .container {
-                height: auto;
-                min-height: 100vh;
-            }
-            
-            .responsive-iframe {
-                height: 90vh;
+            .progress-container {
+                width: 80%;
+                max-width: 300px;
             }
         }
 
         @media screen and (max-width: 768px) {
-            .responsive-iframe {
-                height: 85vh;
+            .loading-message {
+                font-size: 18px;
             }
         }
 
         @media screen and (max-width: 480px) {
-            .responsive-iframe {
-                height: 80vh;
+            .progress-container {
+                width: 85%;
+                max-width: 250px;
             }
+            
+            .loading-message {
+                font-size: 16px;
+                padding: 6px 12px;
+            }
+        }
+        
+        /* Remover todas as barras de rolagem em qualquer contexto */
+        ::-webkit-scrollbar {
+            display: none !important;
+            width: 0 !important;
+            height: 0 !important;
+        }
+        
+        /* Hack para ocultar barras em Firefox/Edge */
+        * {
+            scrollbar-width: none !important;
+            -ms-overflow-style: none !important;
         }
     </style>
 </head>
 <body>
     <!-- Container principal -->
     <div class="container">
-        <!-- Loading overlay -->
-        <div id="loadingOverlay" class="loading-overlay">
-            <div class="spinner"></div>
+        <!-- Fundo animado -->
+        <div class="animated-background">
+            <div class="animated-shape shape1"></div>
+            <div class="animated-shape shape2"></div>
+            <div class="animated-shape shape3"></div>
+            <div class="animated-shape shape4"></div>
+            <div class="animated-shape shape5"></div>
         </div>
         
-        <!-- iframe para o Web App do GAS -->
+        <!-- Loading overlay -->
+        <div id="loadingOverlay" class="loading-overlay">
+            <div class="progress-container">
+                <div id="progressBar" class="progress-bar"></div>
+            </div>
+            <div id="loadingMessage" class="loading-message">Iniciando sistema...</div>
+        </div>
+        
+        <!-- iframe para o Web App do GAS - URL carregado imediatamente -->
         <iframe 
             id="appFrame"
             class="responsive-iframe"
-            src="https://script.google.com/macros/s/AKfycbwCCzYYxfSoijEs6_wJrReSkH3nkSlR30NV1F7yRlrfUxBknEb7JFECBVjwKt4hKSy3fw/exec"
+            src="https://script.google.com/macros/s/AKfycbwMNutHuFGAi1klal_2rX81MHXp11bWueBncrQ7VfgMJv5AVKseiInIBxpI06mqQeBoJg/exec"
             frameborder="0"
             allowfullscreen="true"
             sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox allow-downloads"
+            scrolling="no"
         ></iframe>
     </div>
 
     <script>
-        // Elementos do DOM
+        // Cache dos elementos DOM para melhor performance
         const appFrame = document.getElementById('appFrame');
         const loadingOverlay = document.getElementById('loadingOverlay');
+        const progressBar = document.getElementById('progressBar');
+        const loadingMessage = document.getElementById('loadingMessage');
         
-        // Esconde o loading quando o iframe carregar
-        appFrame.onload = function() {
-            loadingOverlay.style.display = 'none';
-        };
+        // Sequência de mensagens de carregamento
+        const loadingMessages = [
+            "Iniciando sistema...",
+            "Carregando componentes...",
+            "Preparando interface...",
+            "Quase pronto...",
+            "Bem Vindo!"
+        ];
         
-        // Esconde o loading após um tempo, mesmo se o onload não disparar
+        // Estado e configuração
+        let iframeStructureLoaded = false;   // Apenas estrutura do iframe carregada
+        let iframeContentReady = false;      // Conteúdo do iframe realmente pronto
+        let animationProgress = 0;
+        let messageIndex = 0;
+        let lastUpdateTime = Date.now();
+        const minLoadingTime = 1500;         // Tempo mínimo aumentado para 1.5 segundos
+        const startTime = Date.now();
+        
+        // Pré-carregamento de recursos importantes
+        function preloadResources() {
+            // Verifica se já temos cache de recursos (implementada via localStorage)
+            if (!localStorage.getItem('sgp_resources_cached')) {
+                console.log('Pré-carregando recursos visuais...');
+                
+                // Força o navegador a cachear elementos de animação
+                const preloadItems = [
+                    '.animated-background',
+                    '.animated-shape',
+                    '.progress-bar',
+                    '.progress-container'
+                ];
+                
+                preloadItems.forEach(selector => {
+                    const elements = document.querySelectorAll(selector);
+                    if (elements.length > 0) {
+                        // Forçar repaint para cachear
+                        elements.forEach(el => {
+                            el.getBoundingClientRect();
+                        });
+                    }
+                });
+                
+                // Marca recursos como cacheados para futuras visitas
+                localStorage.setItem('sgp_resources_cached', 'true');
+                localStorage.setItem('sgp_cache_timestamp', Date.now().toString());
+            } else {
+                console.log('Usando recursos visuais cacheados');
+                
+                // Verifica idade do cache (7 dias)
+                const cacheTimestamp = parseInt(localStorage.getItem('sgp_cache_timestamp') || '0');
+                const cacheAge = Date.now() - cacheTimestamp;
+                if (cacheAge > 7 * 24 * 60 * 60 * 1000) { // 7 dias em milissegundos
+                    localStorage.removeItem('sgp_resources_cached');
+                    localStorage.removeItem('sgp_cache_timestamp');
+                    preloadResources(); // Recarrega recursos
+                }
+            }
+        }
+        
+        // Garantir que o scroll está desativado em todos os contextos
+        function disableScrolling() {
+            // Impede o scroll no documento principal
+            document.body.style.overflow = 'hidden';
+            document.documentElement.style.overflow = 'hidden';
+            
+            // Desativa eventos de toque que poderiam causar scroll
+            document.addEventListener('touchmove', preventDefaultScroll, { passive: false });
+            
+            // Desativa eventos de roda do mouse
+            document.addEventListener('wheel', preventDefaultScroll, { passive: false });
+        }
+        
+        // Função para prevenir o comportamento padrão de scroll
+        function preventDefaultScroll(e) {
+            e.preventDefault();
+        }
+        
+        // Verifica se o iframe tem conteúdo real visível
+        function checkIframeContent() {
+            try {
+                // Verifica se podemos acessar o conteúdo do iframe (segurança de mesma origem)
+                if (appFrame.contentWindow && appFrame.contentWindow.document) {
+                    const iframeDoc = appFrame.contentWindow.document;
+                    
+                    // Verifica se o documento do iframe tem conteúdo real
+                    const hasContent = iframeDoc.body && 
+                                      iframeDoc.body.children.length > 0 &&
+                                      iframeDoc.readyState === 'complete';
+                    
+                    // Verifica se há elementos visíveis no iframe
+                    let visibleElements = false;
+                    if (hasContent) {
+                        // Procura por elementos visíveis
+                        const elements = iframeDoc.querySelectorAll('div, h1, p, header, button, input, table');
+                        elements.forEach(element => {
+                            // Verifica se o elemento está visível e tem tamanho
+                            const rect = element.getBoundingClientRect();
+                            if (rect.width > 0 && rect.height > 0) {
+                                visibleElements = true;
+                            }
+                        });
+                    }
+                    
+                    return hasContent && visibleElements;
+                }
+                return false;
+            } catch (e) {
+                // Em caso de erro por política de mesma origem, tentamos uma estratégia alternativa
+                // Verificamos se o iframe está carregado e está visível por pelo menos 1 segundo
+                if (iframeStructureLoaded) {
+                    const elapsedSinceLoad = Date.now() - iframeLoadTime;
+                    if (elapsedSinceLoad > 2000) { // 2 segundos após carregar a estrutura
+                        return true;
+                    }
+                }
+                return false;
+            }
+        }
+        
+        // Animação suave da barra de progresso
+        function animateProgress() {
+            const now = Date.now();
+            const delta = (now - lastUpdateTime) / 1000; // Tempo desde a última atualização em segundos
+            lastUpdateTime = now;
+            
+            // Verifica o conteúdo do iframe periodicamente
+            if (iframeStructureLoaded && !iframeContentReady) {
+                iframeContentReady = checkIframeContent();
+            }
+            
+            // Se o conteúdo do iframe não está pronto, aumenta lentamente até 90%
+            if (!iframeContentReady) {
+                // Cálculo baseado em logística para simular velocidade de carregamento real
+                const targetProgress = iframeStructureLoaded ? 90 : 75;
+                const remainingProgress = targetProgress - animationProgress;
+                
+                // Quanto mais próximo do limite, mais devagar avança
+                const increment = remainingProgress * delta * 0.5; 
+                animationProgress = Math.min(targetProgress, animationProgress + increment);
+                
+                // Atualiza mensagens baseadas no progresso
+                updateLoadingMessage();
+                
+                // Atualiza a barra de progresso visualmente
+                progressBar.style.width = `${animationProgress}%`;
+                
+                // Continua a animação
+                requestAnimationFrame(animateProgress);
+            } else {
+                // Conteúdo do iframe está pronto, completa rapidamente até 100%
+                const elapsedTime = now - startTime;
+                
+                // Garante tempo mínimo de exibição da animação
+                if (elapsedTime < minLoadingTime) {
+                    setTimeout(() => completeLoading(), minLoadingTime - elapsedTime);
+                } else {
+                    completeLoading();
+                }
+            }
+        }
+        
+        // Atualiza mensagens de carregamento com base no progresso
+        function updateLoadingMessage() {
+            // Escolhe a mensagem com base no progresso atual
+            let newMessageIndex;
+            
+            if (animationProgress < 25) {
+                newMessageIndex = 0;
+            } else if (animationProgress < 50) {
+                newMessageIndex = 1;
+            } else if (animationProgress < 75) {
+                newMessageIndex = 2;
+            } else if (animationProgress < 90) {
+                newMessageIndex = 3;
+            } else {
+                newMessageIndex = 4;
+            }
+            
+            if (newMessageIndex > messageIndex) {
+                messageIndex = newMessageIndex;
+                fadeTransition(loadingMessage, loadingMessages[messageIndex]);
+            }
+        }
+        
+        // Transição suave de mensagens
+        function fadeTransition(element, newText) {
+            element.style.opacity = "0";
+            
+            setTimeout(() => {
+                element.textContent = newText;
+                element.style.opacity = "1";
+            }, 300);
+        }
+        
+        // Completa o carregamento e mostra o iframe
+        function completeLoading() {
+            // Atualiza para a mensagem final
+            messageIndex = loadingMessages.length - 1;
+            loadingMessage.textContent = loadingMessages[messageIndex];
+            
+            // Completa a barra de progresso
+            progressBar.style.width = "100%";
+            
+            // Pequeno atraso para mostrar 100% antes de desaparecer
+            setTimeout(() => {
+                // Certifica-se novamente que o scroll está desativado
+                disableScrolling();
+                
+                // Mostra o iframe
+                appFrame.style.opacity = "1";
+                
+                // Esconde o overlay
+                loadingOverlay.style.opacity = "0";
+                
+                // Remove completamente o overlay após transição
+                setTimeout(() => {
+                    loadingOverlay.style.display = "none";
+                }, 400);
+            }, 500);
+        }
+        
+        // Variável para controlar quando o iframe carregou estruturalmente
+        let iframeLoadTime = 0;
+        
+        // Inicia o processo quando a página carrega
+        window.addEventListener('DOMContentLoaded', () => {
+            // Pré-carrega recursos para melhorar performance
+            preloadResources();
+            
+            // Desabilita scrolling imediatamente
+            disableScrolling();
+            
+            // Inicia a animação de progresso
+            animateProgress();
+            
+            // Iniciar verificação periódica do conteúdo do iframe
+            const contentCheckInterval = setInterval(() => {
+                if (iframeStructureLoaded) {
+                    if (checkIframeContent()) {
+                        iframeContentReady = true;
+                        clearInterval(contentCheckInterval);
+                    }
+                }
+            }, 200); // Verifica a cada 200ms
+        });
+        
+        // Quando o iframe carregar estruturalmente (não necessariamente o conteúdo)
+        appFrame.addEventListener('load', () => {
+            console.log("Estrutura do iframe carregada");
+            iframeStructureLoaded = true;
+            iframeLoadTime = Date.now();
+            
+            // Garante que o iframe também não terá barras de rolagem
+            try {
+                appFrame.contentWindow.document.body.style.overflow = 'hidden';
+            } catch (e) {
+                // Em caso de erro por política de mesma origem, ignora
+                console.log("Não foi possível acessar o conteúdo do iframe devido à política de mesma origem");
+            }
+            
+            // Inicia verificação de MutationObserver se possível
+            try {
+                const iframeDoc = appFrame.contentWindow.document;
+                
+                // Observer para detectar mudanças no DOM do iframe
+                const observer = new MutationObserver((mutations) => {
+                    // Se houver mutações significativas, verificamos o conteúdo
+                    if (mutations.length > 0) {
+                        if (checkIframeContent()) {
+                            iframeContentReady = true;
+                            observer.disconnect();
+                        }
+                    }
+                });
+                
+                // Observa mudanças no body do iframe
+                observer.observe(iframeDoc.body, {
+                    childList: true,
+                    subtree: true,
+                    attributes: true
+                });
+            } catch (e) {
+                // Se não conseguirmos acessar o documento do iframe, recorremos ao método de verificação periódica
+                console.log("Usando método alternativo para detectar conteúdo do iframe");
+            }
+        });
+        
+        // Verifica e corrige o tamanho da janela quando houver redimensionamento
+        window.addEventListener('resize', () => {
+            // Reforça a desativação do scroll em caso de redimensionamento
+            disableScrolling();
+        });
+        
+        // Fallback de segurança (caso o evento load do iframe não dispare)
+        const maxWaitTime = 30000; // 30 segundos de tempo máximo de espera
         setTimeout(() => {
-            loadingOverlay.style.display = 'none';
-        }, 5000);
+            if (!iframeContentReady) {
+                console.log("Tempo máximo de espera atingido, finalizando carregamento");
+                iframeContentReady = true;
+            }
+        }, maxWaitTime);
     </script>
 </body>
 </html>

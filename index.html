@@ -8,7 +8,7 @@
     <!-- Cache-control para recursos estáticos -->
     <meta http-equiv="Cache-Control" content="max-age=604800">
     <style>
-        /* Reset CSS básico com supressão explícita de scroll */
+        /* Os estilos permanecem inalterados */
         * {
             margin: 0;
             padding: 0;
@@ -240,7 +240,7 @@
         <iframe 
             id="appFrame"
             class="responsive-iframe"
-            src="https://script.google.com/macros/s/AKfycbwMNutHuFGAi1klal_2rX81MHXp11bWueBncrQ7VfgMJv5AVKseiInIBxpI06mqQeBoJg/exec"
+            src="https://script.google.com/macros/s/AKfycbxCz95sccu3Pb0gt-QBNlnkjwcalZPi7TFjwLGevDT53b3u4GO6LGWinzbb9A0bViTk-w/exec"
             frameborder="0"
             allowfullscreen="true"
             sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox allow-downloads"
@@ -260,24 +260,48 @@
             "Iniciando sistema...",
             "Carregando componentes...",
             "Preparando interface...",
+            "Sincronizando elementos...",
             "Quase pronto...",
             "Bem Vindo!"
         ];
         
-        // Estado e configuração
-        let iframeStructureLoaded = false;   // Apenas estrutura do iframe carregada
-        let iframeContentReady = false;      // Conteúdo do iframe realmente pronto
-        let animationProgress = 0;
-        let messageIndex = 0;
-        let lastUpdateTime = Date.now();
-        const minLoadingTime = 1500;         // Tempo mínimo aumentado para 1.5 segundos
-        const startTime = Date.now();
+        // Configuração otimizada
+        const CONFIG = {
+            // Tempo estimado total de carregamento (ajustado para 6 segundos conforme recomendação)
+            estimatedLoadTime: 6000,
+            
+            // Tempo mínimo de exibição da animação (mesmo que carregue mais rápido)
+            minLoadingTime: 1500,
+            
+            // Tempo máximo de espera antes de forçar a conclusão
+            maxLoadingTime: 10000,
+            
+            // Intervalo de atualização da barra de progresso
+            progressUpdateInterval: 50,
+            
+            // Thresholds para mudança de mensagem (percentuais)
+            messageThresholds: [0, 20, 40, 60, 80, 95]
+        };
         
-        // Pré-carregamento de recursos importantes
-        function preloadResources() {
-            // Verifica se já temos cache de recursos (implementada via localStorage)
+        // Estado do carregamento
+        let state = {
+            startTime: Date.now(),
+            iframeStructureLoaded: false,
+            iframeContentReady: false,
+            iframeContentDetected: false,
+            progress: 0,
+            currentMessageIndex: 0,
+            animationFrame: null
+        };
+        
+        /**
+         * Sistema de cache para recursos visuais
+         * Melhora o desempenho em visitas subsequentes
+         */
+        function setupResourceCache() {
+            // Verifica se já temos cache de recursos
             if (!localStorage.getItem('sgp_resources_cached')) {
-                console.log('Pré-carregando recursos visuais...');
+                //console.log('Pré-carregando recursos visuais...');
                 
                 // Força o navegador a cachear elementos de animação
                 const preloadItems = [
@@ -297,11 +321,11 @@
                     }
                 });
                 
-                // Marca recursos como cacheados para futuras visitas
+                // Marca recursos como cacheados para futuras visitas (7 dias)
                 localStorage.setItem('sgp_resources_cached', 'true');
                 localStorage.setItem('sgp_cache_timestamp', Date.now().toString());
             } else {
-                console.log('Usando recursos visuais cacheados');
+                //console.log('Usando recursos visuais cacheados');
                 
                 // Verifica idade do cache (7 dias)
                 const cacheTimestamp = parseInt(localStorage.getItem('sgp_cache_timestamp') || '0');
@@ -309,160 +333,213 @@
                 if (cacheAge > 7 * 24 * 60 * 60 * 1000) { // 7 dias em milissegundos
                     localStorage.removeItem('sgp_resources_cached');
                     localStorage.removeItem('sgp_cache_timestamp');
-                    preloadResources(); // Recarrega recursos
+                    setupResourceCache(); // Recarrega recursos
                 }
             }
         }
         
-        // Garantir que o scroll está desativado em todos os contextos
+        /**
+         * Desativa o scroll em todos os contextos
+         * Importante para experiência de aplicativo nativa
+         */
         function disableScrolling() {
-            // Impede o scroll no documento principal
             document.body.style.overflow = 'hidden';
             document.documentElement.style.overflow = 'hidden';
             
-            // Desativa eventos de toque que poderiam causar scroll
+            // Eventos touch que podem causar scroll
             document.addEventListener('touchmove', preventDefaultScroll, { passive: false });
             
-            // Desativa eventos de roda do mouse
+            // Eventos de roda do mouse
             document.addEventListener('wheel', preventDefaultScroll, { passive: false });
+            
+            // Tenta aplicar ao iframe também
+            try {
+                if (appFrame.contentWindow && appFrame.contentWindow.document) {
+                    appFrame.contentWindow.document.body.style.overflow = 'hidden';
+                }
+            } catch (e) {
+                // Silencia erros por política de mesma origem
+            }
         }
         
-        // Função para prevenir o comportamento padrão de scroll
+        /**
+         * Evita comportamento padrão de eventos que causam scroll
+         */
         function preventDefaultScroll(e) {
             e.preventDefault();
         }
         
-        // Verifica se o iframe tem conteúdo real visível
-        function checkIframeContent() {
+        /**
+         * Detecta o conteúdo do iframe com métodos múltiplos e otimizados
+         * Combina várias heurísticas para detecção mais confiável
+         */
+        function detectIframeContent() {
             try {
-                // Verifica se podemos acessar o conteúdo do iframe (segurança de mesma origem)
-                if (appFrame.contentWindow && appFrame.contentWindow.document) {
-                    const iframeDoc = appFrame.contentWindow.document;
-                    
-                    // Verifica se o documento do iframe tem conteúdo real
-                    const hasContent = iframeDoc.body && 
-                                      iframeDoc.body.children.length > 0 &&
-                                      iframeDoc.readyState === 'complete';
-                    
-                    // Verifica se há elementos visíveis no iframe
-                    let visibleElements = false;
-                    if (hasContent) {
-                        // Procura por elementos visíveis
-                        const elements = iframeDoc.querySelectorAll('div, h1, p, header, button, input, table');
-                        elements.forEach(element => {
-                            // Verifica se o elemento está visível e tem tamanho
-                            const rect = element.getBoundingClientRect();
-                            if (rect.width > 0 && rect.height > 0) {
-                                visibleElements = true;
-                            }
-                        });
-                    }
-                    
-                    return hasContent && visibleElements;
+                // Verifica acesso ao documento (política de mesma origem)
+                if (!appFrame.contentWindow || !appFrame.contentWindow.document) {
+                    return false;
                 }
-                return false;
-            } catch (e) {
-                // Em caso de erro por política de mesma origem, tentamos uma estratégia alternativa
-                // Verificamos se o iframe está carregado e está visível por pelo menos 1 segundo
-                if (iframeStructureLoaded) {
-                    const elapsedSinceLoad = Date.now() - iframeLoadTime;
-                    if (elapsedSinceLoad > 2000) { // 2 segundos após carregar a estrutura
-                        return true;
+                
+                const iframeDoc = appFrame.contentWindow.document;
+                
+                // Verifica se o documento está completamente carregado
+                if (iframeDoc.readyState !== 'complete') {
+                    return false;
+                }
+                
+                // Método 1: Verificação de elementos visíveis importantes
+                const hasVisibleElements = () => {
+                    const significantElements = iframeDoc.querySelectorAll('div:not(:empty), .container, .animated-background');
+                    let visibleCount = 0;
+                    
+                    for (const el of significantElements) {
+                        const rect = el.getBoundingClientRect();
+                        if (rect.width > 50 && rect.height > 50) {
+                            visibleCount++;
+                        }
                     }
+                    
+                    return visibleCount >= 3; // Pelo menos alguns elementos significativos
+                };
+                
+                // Método 2: Verificação do fundo (para aplicações com fundo animado)
+                const hasBackground = () => {
+                    const bg = iframeDoc.querySelector('.animated-background');
+                    return bg && bg.getBoundingClientRect().width > 0;
+                };
+                
+                // Método 3: Verificação de elementos de UI comuns
+                const hasUIElements = () => {
+                    return iframeDoc.querySelectorAll('.container, .content-container, header, nav, button, input').length > 0;
+                };
+                
+                // Método 4: Verificação de estilos aplicados (indica CSS carregado)
+                const hasStyles = () => {
+                    const body = iframeDoc.body;
+                    if (!body) return false;
+                    
+                    const bodyStyles = window.getComputedStyle(body);
+                    return bodyStyles.background !== '' || bodyStyles.backgroundColor !== '';
+                };
+                
+                // Combinação de métodos para detecção mais confiável
+                return hasVisibleElements() || (hasBackground() && hasUIElements()) || hasStyles();
+                
+            } catch (e) {
+                // Estratégia alternativa para contornar limitações de mesma origem
+                if (state.iframeStructureLoaded) {
+                    const elapsed = Date.now() - state.startTime;
+                    
+                    // Estima com base no tempo decorrido após carregamento da estrutura
+                    return elapsed > (CONFIG.estimatedLoadTime * 0.7);
                 }
                 return false;
             }
         }
         
-        // Animação suave da barra de progresso
+        /**
+         * Atualiza a mensagem de carregamento com efeito de transição suave
+         */
+        function updateLoadingMessage(newIndex) {
+            if (newIndex !== state.currentMessageIndex) {
+                state.currentMessageIndex = newIndex;
+                
+                // Efeito de fade na troca de mensagem
+                loadingMessage.style.opacity = "0";
+                
+                setTimeout(() => {
+                    loadingMessage.textContent = loadingMessages[newIndex];
+                    loadingMessage.style.opacity = "1";
+                }, 300);
+            }
+        }
+        
+        /**
+         * Animação otimizada da barra de progresso
+         * Combina progresso baseado em tempo com verificações inteligentes de estado
+         */
         function animateProgress() {
             const now = Date.now();
-            const delta = (now - lastUpdateTime) / 1000; // Tempo desde a última atualização em segundos
-            lastUpdateTime = now;
+            const elapsed = now - state.startTime;
             
-            // Verifica o conteúdo do iframe periodicamente
-            if (iframeStructureLoaded && !iframeContentReady) {
-                iframeContentReady = checkIframeContent();
+            // Cálculo baseado em tempo para progresso suave
+            let timeBasedProgress = Math.min(100, (elapsed / CONFIG.estimatedLoadTime) * 100);
+            
+            // Ajustes baseados no estado real de carregamento
+            if (state.iframeStructureLoaded) {
+                // Garante pelo menos 40% após estrutura carregada
+                timeBasedProgress = Math.max(timeBasedProgress, 40);
             }
             
-            // Se o conteúdo do iframe não está pronto, aumenta lentamente até 90%
-            if (!iframeContentReady) {
-                // Cálculo baseado em logística para simular velocidade de carregamento real
-                const targetProgress = iframeStructureLoaded ? 90 : 75;
-                const remainingProgress = targetProgress - animationProgress;
-                
-                // Quanto mais próximo do limite, mais devagar avança
-                const increment = remainingProgress * delta * 0.5; 
-                animationProgress = Math.min(targetProgress, animationProgress + increment);
-                
-                // Atualiza mensagens baseadas no progresso
-                updateLoadingMessage();
-                
-                // Atualiza a barra de progresso visualmente
-                progressBar.style.width = `${animationProgress}%`;
-                
-                // Continua a animação
-                requestAnimationFrame(animateProgress);
-            } else {
-                // Conteúdo do iframe está pronto, completa rapidamente até 100%
-                const elapsedTime = now - startTime;
-                
-                // Garante tempo mínimo de exibição da animação
-                if (elapsedTime < minLoadingTime) {
-                    setTimeout(() => completeLoading(), minLoadingTime - elapsedTime);
-                } else {
-                    completeLoading();
+            // Verifica periodicamente o conteúdo real
+            if (state.iframeStructureLoaded && !state.iframeContentReady) {
+                // Verificações menos frequentes para melhorar desempenho
+                if (Math.random() < 0.1) { // ~10% de chance por frame
+                    state.iframeContentDetected = detectIframeContent();
+                    
+                    if (state.iframeContentDetected) {
+                        //console.log("Conteúdo do iframe detectado!");
+                    }
                 }
             }
-        }
-        
-        // Atualiza mensagens de carregamento com base no progresso
-        function updateLoadingMessage() {
-            // Escolhe a mensagem com base no progresso atual
-            let newMessageIndex;
             
-            if (animationProgress < 25) {
-                newMessageIndex = 0;
-            } else if (animationProgress < 50) {
-                newMessageIndex = 1;
-            } else if (animationProgress < 75) {
-                newMessageIndex = 2;
-            } else if (animationProgress < 90) {
-                newMessageIndex = 3;
+            // Ajusta progresso com base na detecção de conteúdo
+            if (state.iframeContentDetected) {
+                // Acelera para 90% após detecção de conteúdo
+                timeBasedProgress = Math.max(timeBasedProgress, 90);
+                
+                // Aguarda tempo mínimo antes de considerar pronto
+                if (elapsed >= CONFIG.minLoadingTime) {
+                    state.iframeContentReady = true;
+                }
+            }
+            
+            // Suavização para evitar saltos na barra de progresso
+            state.progress = state.progress * 0.9 + timeBasedProgress * 0.1;
+            
+            // Atualiza a barra de progresso visualmente
+            progressBar.style.width = `${state.progress}%`;
+            
+            // Determina a mensagem baseada no progresso
+            for (let i = CONFIG.messageThresholds.length - 1; i >= 0; i--) {
+                if (state.progress >= CONFIG.messageThresholds[i]) {
+                    updateLoadingMessage(i);
+                    break;
+                }
+            }
+            
+            // Verifica condições para finalizar
+            if (state.iframeContentReady && state.progress >= 97) {
+                // Conteúdo pronto e progresso quase completo
+                completeLoading();
+            } else if (elapsed >= CONFIG.maxLoadingTime) {
+                // Tempo máximo de espera atingido
+                //console.log("Tempo máximo de espera atingido");
+                state.iframeContentReady = true;
+                completeLoading();
             } else {
-                newMessageIndex = 4;
-            }
-            
-            if (newMessageIndex > messageIndex) {
-                messageIndex = newMessageIndex;
-                fadeTransition(loadingMessage, loadingMessages[messageIndex]);
+                // Continua a animação com requestAnimationFrame para melhor performance
+                state.animationFrame = requestAnimationFrame(animateProgress);
             }
         }
         
-        // Transição suave de mensagens
-        function fadeTransition(element, newText) {
-            element.style.opacity = "0";
-            
-            setTimeout(() => {
-                element.textContent = newText;
-                element.style.opacity = "1";
-            }, 300);
-        }
-        
-        // Completa o carregamento e mostra o iframe
+        /**
+         * Completa o carregamento e exibe o iframe com transição suave
+         */
         function completeLoading() {
+            // Cancela qualquer animationFrame pendente
+            if (state.animationFrame) {
+                cancelAnimationFrame(state.animationFrame);
+            }
+            
             // Atualiza para a mensagem final
-            messageIndex = loadingMessages.length - 1;
-            loadingMessage.textContent = loadingMessages[messageIndex];
+            updateLoadingMessage(loadingMessages.length - 1);
             
             // Completa a barra de progresso
             progressBar.style.width = "100%";
             
             // Pequeno atraso para mostrar 100% antes de desaparecer
             setTimeout(() => {
-                // Certifica-se novamente que o scroll está desativado
-                disableScrolling();
-                
                 // Mostra o iframe
                 appFrame.style.opacity = "1";
                 
@@ -473,16 +550,18 @@
                 setTimeout(() => {
                     loadingOverlay.style.display = "none";
                 }, 400);
-            }, 500);
+            }, 300);
         }
         
-        // Variável para controlar quando o iframe carregou estruturalmente
-        let iframeLoadTime = 0;
-        
-        // Inicia o processo quando a página carrega
-        window.addEventListener('DOMContentLoaded', () => {
+        /**
+         * Inicialização da página
+         */
+        function init() {
+            // Registra o tempo de início
+            state.startTime = Date.now();
+            
             // Pré-carrega recursos para melhorar performance
-            preloadResources();
+            setupResourceCache();
             
             // Desabilita scrolling imediatamente
             disableScrolling();
@@ -490,72 +569,52 @@
             // Inicia a animação de progresso
             animateProgress();
             
-            // Iniciar verificação periódica do conteúdo do iframe
-            const contentCheckInterval = setInterval(() => {
-                if (iframeStructureLoaded) {
-                    if (checkIframeContent()) {
-                        iframeContentReady = true;
-                        clearInterval(contentCheckInterval);
+            // Monitora carregamento do iframe
+            appFrame.addEventListener('load', () => {
+                //console.log("Estrutura do iframe carregada");
+                state.iframeStructureLoaded = true;
+                
+                // Tenta desabilitar scroll no iframe
+                try {
+                    if (appFrame.contentWindow && appFrame.contentWindow.document) {
+                        appFrame.contentWindow.document.body.style.overflow = 'hidden';
                     }
+                } catch (e) {
+                    // Silencia erros por política de mesma origem
                 }
-            }, 200); // Verifica a cada 200ms
-        });
-        
-        // Quando o iframe carregar estruturalmente (não necessariamente o conteúdo)
-        appFrame.addEventListener('load', () => {
-            console.log("Estrutura do iframe carregada");
-            iframeStructureLoaded = true;
-            iframeLoadTime = Date.now();
-            
-            // Garante que o iframe também não terá barras de rolagem
-            try {
-                appFrame.contentWindow.document.body.style.overflow = 'hidden';
-            } catch (e) {
-                // Em caso de erro por política de mesma origem, ignora
-                console.log("Não foi possível acessar o conteúdo do iframe devido à política de mesma origem");
-            }
-            
-            // Inicia verificação de MutationObserver se possível
-            try {
-                const iframeDoc = appFrame.contentWindow.document;
                 
-                // Observer para detectar mudanças no DOM do iframe
-                const observer = new MutationObserver((mutations) => {
-                    // Se houver mutações significativas, verificamos o conteúdo
-                    if (mutations.length > 0) {
-                        if (checkIframeContent()) {
-                            iframeContentReady = true;
-                            observer.disconnect();
+                // Observer para detectar mudanças no DOM do iframe (se possível)
+                try {
+                    const iframeDoc = appFrame.contentWindow.document;
+                    
+                    const observer = new MutationObserver((mutations) => {
+                        if (mutations.length > 0 && !state.iframeContentDetected) {
+                            state.iframeContentDetected = detectIframeContent();
+                            if (state.iframeContentDetected) {
+                                //console.log("Conteúdo detectado via MutationObserver");
+                                observer.disconnect();
+                            }
                         }
-                    }
-                });
-                
-                // Observa mudanças no body do iframe
-                observer.observe(iframeDoc.body, {
-                    childList: true,
-                    subtree: true,
-                    attributes: true
-                });
-            } catch (e) {
-                // Se não conseguirmos acessar o documento do iframe, recorremos ao método de verificação periódica
-                console.log("Usando método alternativo para detectar conteúdo do iframe");
-            }
-        });
+                    });
+                    
+                    // Observa mudanças no body do iframe
+                    observer.observe(iframeDoc.body, {
+                        childList: true,
+                        subtree: true,
+                        attributes: true,
+                        attributeFilter: ['class', 'style']
+                    });
+                } catch (e) {
+                    // Silencia erros por política de mesma origem
+                }
+            });
+            
+            // Ajusta em caso de redimensionamento da janela
+            window.addEventListener('resize', disableScrolling);
+        }
         
-        // Verifica e corrige o tamanho da janela quando houver redimensionamento
-        window.addEventListener('resize', () => {
-            // Reforça a desativação do scroll em caso de redimensionamento
-            disableScrolling();
-        });
-        
-        // Fallback de segurança (caso o evento load do iframe não dispare)
-        const maxWaitTime = 30000; // 30 segundos de tempo máximo de espera
-        setTimeout(() => {
-            if (!iframeContentReady) {
-                console.log("Tempo máximo de espera atingido, finalizando carregamento");
-                iframeContentReady = true;
-            }
-        }, maxWaitTime);
+        // Inicia tudo quando a página carrega
+        window.addEventListener('DOMContentLoaded', init);
     </script>
 </body>
 </html>

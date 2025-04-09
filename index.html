@@ -5,10 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <title>Sistema de Gestão de Projetos (SGP)</title>
-    <!-- Cache-control para recursos estáticos -->
-    <meta http-equiv="Cache-Control" content="max-age=604800">
     <style>
-        /* Os estilos permanecem inalterados */
+        /* Apenas estilos essenciais */
         * {
             margin: 0;
             padding: 0;
@@ -18,229 +16,35 @@
         html, body {
             width: 100%;
             height: 100%;
-            font-family: Arial, sans-serif;
-            background-color: #006666;
-            overflow: hidden !important; /* Garante que não haverá scroll em nenhuma condição */
-            position: fixed; /* Impede scroll em dispositivos móveis */
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
+            overflow: hidden;
         }
-
-        /* Container principal - fixo sem possibilidade de scroll */
+        
         .container {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            overflow: hidden !important;
+            overflow: hidden;
             display: flex;
             flex-direction: column;
         }
-
-        /* Frame responsivo sem scroll */
+        
         .responsive-iframe {
             flex: 1;
             width: 100%;
             height: 100%;
             border: none;
             background-color: transparent;
-            opacity: 0;
-            transition: opacity 0.4s ease-in-out;
-            will-change: opacity;
-            overflow: hidden !important;
-        }
-
-        /* Loading overlay */
-        .loading-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            z-index: 999;
-            transition: opacity 0.4s ease-in-out;
-            background-color: rgba(0, 0, 0, 0.25);
-            will-change: opacity;
-            overflow: hidden !important;
-        }
-
-        /* Barra de progresso */
-        .progress-container {
-            width: 300px;
-            background-color: rgba(255, 255, 255, 0.3);
-            border-radius: 10px;
-            margin-bottom: 20px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-            overflow: hidden;
-            position: relative;
-        }
-
-        .progress-bar {
-            height: 10px;
-            background: linear-gradient(90deg, #3333ff, #006666);
-            width: 0%;
-            border-radius: 10px;
-            transition: width 0.5s cubic-bezier(0.1, 0.7, 1.0, 0.1);
-            position: relative;
-            will-change: width;
-        }
-
-        /* Efeito de pulso na barra de progresso */
-        .progress-bar::after {
-            content: "";
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
-            animation: pulse 1.5s infinite;
-            will-change: transform;
-        }
-
-        @keyframes pulse {
-            0% { transform: translateX(-100%); }
-            100% { transform: translateX(100%); }
-        }
-
-        /* Mensagem de carregamento */
-        .loading-message {
-            color: white;
-            font-size: 20px;
-            font-weight: bold;
-            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
-            margin-top: 15px;
-            text-align: center;
-            min-height: 30px;
-            background-color: rgba(0, 0, 0, 0.4);
-            padding: 8px 15px;
-            border-radius: 8px;
-            transition: opacity 0.3s ease;
-        }
-
-        /* Fundo animado otimizado */
-        .animated-background {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-            z-index: -1;
-            background: linear-gradient(
-                45deg,
-                #3333ff,
-                #006666,
-                #000099,
-                #006666,
-                #3333ff
-            );
-            background-size: 400% 400%;
-            animation: gradient 15s ease infinite;
-            will-change: background-position;
-        }
-
-        @keyframes gradient {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
-        }
-
-        /* Formas Flutuantes Otimizadas */
-        .animated-shape {
-            position: absolute;
-            background: radial-gradient(circle, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0) 70%);
-            border-radius: 50%;
-            pointer-events: none;
-            animation: floating 4s infinite ease-in-out;
-            will-change: transform;
-        }
-
-        @keyframes floating {
-            0% { transform: translateY(0) translateX(0); }
-            50% { transform: translateY(-15px) translateX(8px); }
-            100% { transform: translateY(0) translateX(0); }
-        }
-
-        /* Tamanhos e posições das formas */
-        .shape1 { width: 150px; height: 150px; top: 10%; left: 10%; animation-delay: 0s; }
-        .shape2 { width: 100px; height: 100px; top: 20%; left: 40%; animation-delay: -0.5s; }
-        .shape3 { width: 200px; height: 200px; top: 40%; left: 70%; animation-delay: -1s; }
-        .shape4 { width: 120px; height: 120px; top: 60%; left: 30%; animation-delay: -1.5s; }
-        .shape5 { width: 180px; height: 180px; top: 80%; left: 60%; animation-delay: -2s; }
-
-        /* Media queries otimizadas */
-        @media screen and (max-width: 992px) {
-            .progress-container {
-                width: 80%;
-                max-width: 300px;
-            }
-        }
-
-        @media screen and (max-width: 768px) {
-            .loading-message {
-                font-size: 18px;
-            }
-        }
-
-        @media screen and (max-width: 480px) {
-            .progress-container {
-                width: 85%;
-                max-width: 250px;
-            }
-            
-            .loading-message {
-                font-size: 16px;
-                padding: 6px 12px;
-            }
-        }
-        
-        /* Remover todas as barras de rolagem em qualquer contexto */
-        ::-webkit-scrollbar {
-            display: none !important;
-            width: 0 !important;
-            height: 0 !important;
-        }
-        
-        /* Hack para ocultar barras em Firefox/Edge */
-        * {
-            scrollbar-width: none !important;
-            -ms-overflow-style: none !important;
         }
     </style>
 </head>
 <body>
-    <!-- Container principal -->
     <div class="container">
-        <!-- Fundo animado -->
-        <div class="animated-background">
-            <div class="animated-shape shape1"></div>
-            <div class="animated-shape shape2"></div>
-            <div class="animated-shape shape3"></div>
-            <div class="animated-shape shape4"></div>
-            <div class="animated-shape shape5"></div>
-        </div>
-        
-        <!-- Loading overlay -->
-        <div id="loadingOverlay" class="loading-overlay">
-            <div class="progress-container">
-                <div id="progressBar" class="progress-bar"></div>
-            </div>
-            <div id="loadingMessage" class="loading-message">Iniciando sistema...</div>
-        </div>
-        
-        <!-- iframe para o Web App do GAS - URL carregado imediatamente -->
         <iframe 
             id="appFrame"
             class="responsive-iframe"
-            src="https://script.google.com/macros/s/AKfycbw6cj1M-U6RSTzOLN_b45oC-abTas1hvyXQYjvsi-xpaoFNBJ9zmLx5tG5MM2nLL4K1Qw/exec"
+            src="https://script.google.com/macros/s/AKfycbx79qTN4VAw_06mGRfkaEmjpq0eUqYrFzmDSiey1pXTiovpwigwmcs8GwAoAsYSeqB0Zg/exec"
             frameborder="0"
             allowfullscreen="true"
             sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox allow-downloads"
@@ -249,110 +53,11 @@
     </div>
 
     <script>
-        // Cache dos elementos DOM para melhor performance
-        const appFrame = document.getElementById('appFrame');
-        const loadingOverlay = document.getElementById('loadingOverlay');
-        const progressBar = document.getElementById('progressBar');
-        const loadingMessage = document.getElementById('loadingMessage');
-        
-        // Sequência de mensagens de carregamento
-        const loadingMessages = [
-            "Iniciando sistema...",
-            "Carregando componentes...",
-            "Preparando interface...",
-            "Sincronizando elementos...",
-            "Quase pronto...",
-            "Bem Vindo!"
-        ];
-        
-        // Configuração otimizada
-        const CONFIG = {
-            // Tempo estimado total de carregamento (ajustado para 6 segundos conforme recomendação)
-            estimatedLoadTime: 6000,
-            
-            // Tempo mínimo de exibição da animação (mesmo que carregue mais rápido)
-            minLoadingTime: 1500,
-            
-            // Tempo máximo de espera antes de forçar a conclusão
-            maxLoadingTime: 10000,
-            
-            // Intervalo de atualização da barra de progresso
-            progressUpdateInterval: 50,
-            
-            // Thresholds para mudança de mensagem (percentuais)
-            messageThresholds: [0, 20, 40, 60, 80, 95]
-        };
-        
-        // Estado do carregamento
-        let state = {
-            startTime: Date.now(),
-            iframeStructureLoaded: false,
-            iframeContentReady: false,
-            iframeContentDetected: false,
-            progress: 0,
-            currentMessageIndex: 0,
-            animationFrame: null
-        };
-        
-        /**
-         * Sistema de cache para recursos visuais
-         * Melhora o desempenho em visitas subsequentes
-         */
-        function setupResourceCache() {
-            // Verifica se já temos cache de recursos
-            if (!localStorage.getItem('sgp_resources_cached')) {
-                //console.log('Pré-carregando recursos visuais...');
-                
-                // Força o navegador a cachear elementos de animação
-                const preloadItems = [
-                    '.animated-background',
-                    '.animated-shape',
-                    '.progress-bar',
-                    '.progress-container'
-                ];
-                
-                preloadItems.forEach(selector => {
-                    const elements = document.querySelectorAll(selector);
-                    if (elements.length > 0) {
-                        // Forçar repaint para cachear
-                        elements.forEach(el => {
-                            el.getBoundingClientRect();
-                        });
-                    }
-                });
-                
-                // Marca recursos como cacheados para futuras visitas (7 dias)
-                localStorage.setItem('sgp_resources_cached', 'true');
-                localStorage.setItem('sgp_cache_timestamp', Date.now().toString());
-            } else {
-                //console.log('Usando recursos visuais cacheados');
-                
-                // Verifica idade do cache (7 dias)
-                const cacheTimestamp = parseInt(localStorage.getItem('sgp_cache_timestamp') || '0');
-                const cacheAge = Date.now() - cacheTimestamp;
-                if (cacheAge > 7 * 24 * 60 * 60 * 1000) { // 7 dias em milissegundos
-                    localStorage.removeItem('sgp_resources_cached');
-                    localStorage.removeItem('sgp_cache_timestamp');
-                    setupResourceCache(); // Recarrega recursos
-                }
-            }
-        }
-        
-        /**
-         * Desativa o scroll em todos os contextos
-         * Importante para experiência de aplicativo nativa
-         */
+        // Desabilita scrolling
         function disableScrolling() {
             document.body.style.overflow = 'hidden';
             document.documentElement.style.overflow = 'hidden';
             
-            // Eventos touch que podem causar scroll
-            document.addEventListener('touchmove', preventDefaultScroll, { passive: false });
-            
-            // Eventos de roda do mouse
-            document.addEventListener('wheel', preventDefaultScroll, { passive: false });
-            
-            // Tenta aplicar ao iframe também
             try {
                 if (appFrame.contentWindow && appFrame.contentWindow.document) {
                     appFrame.contentWindow.document.body.style.overflow = 'hidden';
@@ -362,259 +67,11 @@
             }
         }
         
-        /**
-         * Evita comportamento padrão de eventos que causam scroll
-         */
-        function preventDefaultScroll(e) {
-            e.preventDefault();
-        }
-        
-        /**
-         * Detecta o conteúdo do iframe com métodos múltiplos e otimizados
-         * Combina várias heurísticas para detecção mais confiável
-         */
-        function detectIframeContent() {
-            try {
-                // Verifica acesso ao documento (política de mesma origem)
-                if (!appFrame.contentWindow || !appFrame.contentWindow.document) {
-                    return false;
-                }
-                
-                const iframeDoc = appFrame.contentWindow.document;
-                
-                // Verifica se o documento está completamente carregado
-                if (iframeDoc.readyState !== 'complete') {
-                    return false;
-                }
-                
-                // Método 1: Verificação de elementos visíveis importantes
-                const hasVisibleElements = () => {
-                    const significantElements = iframeDoc.querySelectorAll('div:not(:empty), .container, .animated-background');
-                    let visibleCount = 0;
-                    
-                    for (const el of significantElements) {
-                        const rect = el.getBoundingClientRect();
-                        if (rect.width > 50 && rect.height > 50) {
-                            visibleCount++;
-                        }
-                    }
-                    
-                    return visibleCount >= 3; // Pelo menos alguns elementos significativos
-                };
-                
-                // Método 2: Verificação do fundo (para aplicações com fundo animado)
-                const hasBackground = () => {
-                    const bg = iframeDoc.querySelector('.animated-background');
-                    return bg && bg.getBoundingClientRect().width > 0;
-                };
-                
-                // Método 3: Verificação de elementos de UI comuns
-                const hasUIElements = () => {
-                    return iframeDoc.querySelectorAll('.container, .content-container, header, nav, button, input').length > 0;
-                };
-                
-                // Método 4: Verificação de estilos aplicados (indica CSS carregado)
-                const hasStyles = () => {
-                    const body = iframeDoc.body;
-                    if (!body) return false;
-                    
-                    const bodyStyles = window.getComputedStyle(body);
-                    return bodyStyles.background !== '' || bodyStyles.backgroundColor !== '';
-                };
-                
-                // Combinação de métodos para detecção mais confiável
-                return hasVisibleElements() || (hasBackground() && hasUIElements()) || hasStyles();
-                
-            } catch (e) {
-                // Estratégia alternativa para contornar limitações de mesma origem
-                if (state.iframeStructureLoaded) {
-                    const elapsed = Date.now() - state.startTime;
-                    
-                    // Estima com base no tempo decorrido após carregamento da estrutura
-                    return elapsed > (CONFIG.estimatedLoadTime * 0.7);
-                }
-                return false;
-            }
-        }
-        
-        /**
-         * Atualiza a mensagem de carregamento com efeito de transição suave
-         */
-        function updateLoadingMessage(newIndex) {
-            if (newIndex !== state.currentMessageIndex) {
-                state.currentMessageIndex = newIndex;
-                
-                // Efeito de fade na troca de mensagem
-                loadingMessage.style.opacity = "0";
-                
-                setTimeout(() => {
-                    loadingMessage.textContent = loadingMessages[newIndex];
-                    loadingMessage.style.opacity = "1";
-                }, 300);
-            }
-        }
-        
-        /**
-         * Animação otimizada da barra de progresso
-         * Combina progresso baseado em tempo com verificações inteligentes de estado
-         */
-        function animateProgress() {
-            const now = Date.now();
-            const elapsed = now - state.startTime;
-            
-            // Cálculo baseado em tempo para progresso suave
-            let timeBasedProgress = Math.min(100, (elapsed / CONFIG.estimatedLoadTime) * 100);
-            
-            // Ajustes baseados no estado real de carregamento
-            if (state.iframeStructureLoaded) {
-                // Garante pelo menos 40% após estrutura carregada
-                timeBasedProgress = Math.max(timeBasedProgress, 40);
-            }
-            
-            // Verifica periodicamente o conteúdo real
-            if (state.iframeStructureLoaded && !state.iframeContentReady) {
-                // Verificações menos frequentes para melhorar desempenho
-                if (Math.random() < 0.1) { // ~10% de chance por frame
-                    state.iframeContentDetected = detectIframeContent();
-                    
-                    if (state.iframeContentDetected) {
-                        //console.log("Conteúdo do iframe detectado!");
-                    }
-                }
-            }
-            
-            // Ajusta progresso com base na detecção de conteúdo
-            if (state.iframeContentDetected) {
-                // Acelera para 90% após detecção de conteúdo
-                timeBasedProgress = Math.max(timeBasedProgress, 90);
-                
-                // Aguarda tempo mínimo antes de considerar pronto
-                if (elapsed >= CONFIG.minLoadingTime) {
-                    state.iframeContentReady = true;
-                }
-            }
-            
-            // Suavização para evitar saltos na barra de progresso
-            state.progress = state.progress * 0.9 + timeBasedProgress * 0.1;
-            
-            // Atualiza a barra de progresso visualmente
-            progressBar.style.width = `${state.progress}%`;
-            
-            // Determina a mensagem baseada no progresso
-            for (let i = CONFIG.messageThresholds.length - 1; i >= 0; i--) {
-                if (state.progress >= CONFIG.messageThresholds[i]) {
-                    updateLoadingMessage(i);
-                    break;
-                }
-            }
-            
-            // Verifica condições para finalizar
-            if (state.iframeContentReady && state.progress >= 97) {
-                // Conteúdo pronto e progresso quase completo
-                completeLoading();
-            } else if (elapsed >= CONFIG.maxLoadingTime) {
-                // Tempo máximo de espera atingido
-                //console.log("Tempo máximo de espera atingido");
-                state.iframeContentReady = true;
-                completeLoading();
-            } else {
-                // Continua a animação com requestAnimationFrame para melhor performance
-                state.animationFrame = requestAnimationFrame(animateProgress);
-            }
-        }
-        
-        /**
-         * Completa o carregamento e exibe o iframe com transição suave
-         */
-        function completeLoading() {
-            // Cancela qualquer animationFrame pendente
-            if (state.animationFrame) {
-                cancelAnimationFrame(state.animationFrame);
-            }
-            
-            // Atualiza para a mensagem final
-            updateLoadingMessage(loadingMessages.length - 1);
-            
-            // Completa a barra de progresso
-            progressBar.style.width = "100%";
-            
-            // Pequeno atraso para mostrar 100% antes de desaparecer
-            setTimeout(() => {
-                // Mostra o iframe
-                appFrame.style.opacity = "1";
-                
-                // Esconde o overlay
-                loadingOverlay.style.opacity = "0";
-                
-                // Remove completamente o overlay após transição
-                setTimeout(() => {
-                    loadingOverlay.style.display = "none";
-                }, 400);
-            }, 300);
-        }
-        
-        /**
-         * Inicialização da página
-         */
-        function init() {
-            // Registra o tempo de início
-            state.startTime = Date.now();
-            
-            // Pré-carrega recursos para melhorar performance
-            setupResourceCache();
-            
-            // Desabilita scrolling imediatamente
+        // Inicialização mínima
+        window.addEventListener('DOMContentLoaded', () => {
             disableScrolling();
-            
-            // Inicia a animação de progresso
-            animateProgress();
-            
-            // Monitora carregamento do iframe
-            appFrame.addEventListener('load', () => {
-                //console.log("Estrutura do iframe carregada");
-                state.iframeStructureLoaded = true;
-                
-                // Tenta desabilitar scroll no iframe
-                try {
-                    if (appFrame.contentWindow && appFrame.contentWindow.document) {
-                        appFrame.contentWindow.document.body.style.overflow = 'hidden';
-                    }
-                } catch (e) {
-                    // Silencia erros por política de mesma origem
-                }
-                
-                // Observer para detectar mudanças no DOM do iframe (se possível)
-                try {
-                    const iframeDoc = appFrame.contentWindow.document;
-                    
-                    const observer = new MutationObserver((mutations) => {
-                        if (mutations.length > 0 && !state.iframeContentDetected) {
-                            state.iframeContentDetected = detectIframeContent();
-                            if (state.iframeContentDetected) {
-                                //console.log("Conteúdo detectado via MutationObserver");
-                                observer.disconnect();
-                            }
-                        }
-                    });
-                    
-                    // Observa mudanças no body do iframe
-                    observer.observe(iframeDoc.body, {
-                        childList: true,
-                        subtree: true,
-                        attributes: true,
-                        attributeFilter: ['class', 'style']
-                    });
-                } catch (e) {
-                    // Silencia erros por política de mesma origem
-                }
-            });
-            
-            // Ajusta em caso de redimensionamento da janela
             window.addEventListener('resize', disableScrolling);
-        }
-        
-        // Inicia tudo quando a página carrega
-        window.addEventListener('DOMContentLoaded', init);
+        });
     </script>
 </body>
 </html>
